@@ -10,32 +10,21 @@ local abilities = {
   { spellid = 1766, duration = 15},    -- Kick
   { spellid = 36554, duration = 30},   -- Shadowstep
   { spellid = 31224, duration = 60},   -- Cloak of Shadows
-  { spellid = 23920, duration = 10}    -- Spell Reflection
+  { spellid = 23920, duration = 10},   -- Spell Reflection
 }
 
 -----------------------------------------------------
 -----------------------------------------------------
 
-for _, ability in ipairs(abilities) do
-  local _, _, spellicon = GetSpellInfo(ability.spellid)
-  ability.icon = spellicon
-end
-
-local SPELLLOCK = 19647
-local OPTICALBLAST = 115781
-local OPTICALBLASTSAC = 132409
-
 local order
 local frame
 local bar
-local btns = {}
+local monitoredBars = {}
 
 local band = bit.band
 local GetTime = GetTime
 local ipairs = ipairs
 local pairs = pairs
-local select = select
-local floor = floor
 local ceil = math.ceil
 local band = bit.band
 local GetSpellInfo = GetSpellInfo
@@ -61,9 +50,6 @@ local function InterruptBar_CreateIcon(ability)
   cd:SetAllPoints(true)
   cd:SetFrameStrata("MEDIUM")
   cd:SetHideCountdownNumbers(true)
-  cd:SetDrawBling(true)
-  cd:SetDrawSwipe(true)
-  cd:SetAlpha(1)
   cd:Hide()
 
   local texture = btn:CreateTexture(nil, "BACKGROUND")
@@ -76,12 +62,12 @@ local function InterruptBar_CreateIcon(ability)
   text:SetTextColor(1, 1, 0, 1)
   text:SetPoint("LEFT", btn, "LEFT", 2,0)
 
-  -- TODO: use GetSpellCooldown to retrieve the cooldown instead of relying on configuration
   btn.texture = texture
   btn.text = text
   btn.duration = ability.duration
   btn.cd = cd
 
+  -- called when a spell has been cast to start the cooldown tracker
   btn.activate = function()
     if btn.active then return end
     if InterruptBarDB.hidden then btn:Show() end
@@ -94,6 +80,7 @@ local function InterruptBar_CreateIcon(ability)
     btn.active = true
   end
 
+  -- called when a cooldown tracker has finished
   btn.deactivate = function()
     if InterruptBarDB.hidden then btn:Hide() end
     btn.text:SetText("")
@@ -127,21 +114,25 @@ local function InterruptBar_CreateIcon(ability)
   return btn
 end
 
-local function InterruptBar_AddIcons()
+local function InterruptBar_AddIcons(abilitiesCollection)
   local x = -45
-  for _,ability in ipairs(abilities) do
+  for _, ability in ipairs(abilitiesCollection) do
     local btn = InterruptBar_CreateIcon(ability)
     btn:SetPoint("CENTER", bar, "CENTER", x, 0)
-    btns[ability.spellid] = btn
+
+    -- use the ability name as a key, so the detection is rank agnostic
+    monitoredBars[ability.name] = btn
     x = x + 30
   end
 end
 
 local function InterruptBar_SavePosition()
   local point, _, relativePoint, xOfs, yOfs = bar:GetPoint()
+  
   if not InterruptBarDB.Position then 
     InterruptBarDB.Position = {}
   end
+
   InterruptBarDB.Position.point = point
   InterruptBarDB.Position.relativePoint = relativePoint
   InterruptBarDB.Position.xOfs = xOfs
@@ -159,10 +150,11 @@ end
 local function InterruptBar_UpdateBar()
   bar:SetScale(InterruptBarDB.scale)
   if InterruptBarDB.hidden then
-    for _, btn in pairs(btns) do btn:Hide() end
+    for _, btn in pairs(monitoredBars) do btn:Hide() end
   else
-    for _, btn in pairs(btns) do btn:Show() end
+    for _, btn in pairs(monitoredBars) do btn:Show() end
   end
+
   if InterruptBarDB.lock then
     bar:EnableMouse(false)
   else
@@ -170,7 +162,19 @@ local function InterruptBar_UpdateBar()
   end
 end
 
+-- gather the data about the abilities that will be monitored
+local function InterruptBar_InitializeAbilities(abilitiesCollection)
+  for _, ability in ipairs(abilitiesCollection) do
+    local name, _, spellicon = GetSpellInfo(ability.spellid)
+  
+    ability.icon = spellicon
+    ability.name = name
+  end
+end
+
 local function InterruptBar_CreateBar()
+  InterruptBar_InitializeAbilities(abilities)
+
   bar = CreateFrame("Frame", nil, UIParent)
   bar:SetMovable(true)
   bar:SetWidth(120)
@@ -180,20 +184,17 @@ local function InterruptBar_CreateBar()
   bar:SetScript("OnMouseUp", function(self, button) if button == "LeftButton" then self:StopMovingOrSizing() InterruptBar_SavePosition() end end)
   bar:Show()
   
-  InterruptBar_AddIcons()
+  InterruptBar_AddIcons(abilities)
   InterruptBar_UpdateBar()
   InterruptBar_LoadPosition()
 end
 
 -- combat log event has happened
 local function InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, _, _, srcName, srcFlags, _, _, dstName, dstFlags, _, spellid, spellName)
-  -- TODO: investigate potential bug when spells get resisted/miss
   if srcFlags and band(srcFlags, 0x00000040) == 0x00000040 and eventtype == "SPELL_CAST_SUCCESS" then
-    ChatFrame1:AddMessage("DEBUG: spellId from combat log: " .. tostring(spellid), 0, 1, 0)
-    ChatFrame1:AddMessage("DEBUG: spellname from combat log: " .. tostring(spellName), 0, 1, 0)
 
     -- check if the spell id is being monitored by us and activate it
-    local btn = btns[spellid]
+    local btn = monitoredBars[spellName]
     if btn then
       btn.activate()
     end
@@ -201,7 +202,7 @@ local function InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, _, _, srcN
 end
 
 local function InterruptBar_ResetAllTimers()
-  for _,btn in pairs(btns) do
+  for _, btn in pairs(monitoredBars) do
     btn.deactivate()
   end
 end
@@ -217,7 +218,7 @@ local function InterruptBar_Reset()
 end
 
 local function InterruptBar_Test()
-  for _,btn in pairs(btns) do
+  for _, btn in pairs(monitoredBars) do
     btn.activate()
   end
 end
@@ -262,6 +263,7 @@ end
 local function InterruptBar_OnLoad(self)
   self:RegisterEvent("PLAYER_ENTERING_WORLD")
   self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+
   -- initialize the saved variables
   if InterruptBarDB == nil then
     InterruptBarDB = { scale = 1, hidden = false, lock = false }
