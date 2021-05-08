@@ -3,7 +3,7 @@
 ----------------------------------------------------
 
 -- Add new abilities here. Order is determined as shown.
-local abilities = {
+local defaultAbilities = {
   { spellid = 2139, duration = 20},    -- Counterspell
   { spellid = 19647, duration = 24},   -- Spell Lock
   { spellid = 6552, duration = 15},    -- Pummel
@@ -16,10 +16,17 @@ local abilities = {
 -----------------------------------------------------
 -----------------------------------------------------
 
-local order
 local frame
 local bar
 local monitoredBars = {}
+
+local defaultConfig = {
+  scale = 1,
+  hidden = false,
+  lock = false,
+  columns = 0,
+  abilities = defaultAbilities
+}
 
 local band = bit.band
 local GetTime = GetTime
@@ -71,6 +78,7 @@ local function InterruptBar_CreateIcon(ability)
   btn.activate = function()
     if btn.active then return end
     if InterruptBarDB.hidden then btn:Show() end
+
     btn.start = GetTime()
     btn.cd:Show()
     btn.cd:SetCooldown(GetTime() - 0.1, btn.duration)
@@ -83,6 +91,7 @@ local function InterruptBar_CreateIcon(ability)
   -- called when a cooldown tracker has finished
   btn.deactivate = function()
     if InterruptBarDB.hidden then btn:Hide() end
+
     btn.text:SetText("")
     btn.cd:Hide()
     btn:SetScript("OnUpdate", nil)
@@ -114,21 +123,38 @@ local function InterruptBar_CreateIcon(ability)
   return btn
 end
 
-local function InterruptBar_AddIcons(abilitiesCollection)
+local function InterruptBar_PositionSpellIcons(abilitiesCollection, redraw)
   local x = -45
-  for _, ability in ipairs(abilitiesCollection) do
-    local btn = InterruptBar_CreateIcon(ability)
-    btn:SetPoint("CENTER", bar, "CENTER", x, 0)
+  local row = 0
+  local colCounter = 1
 
-    -- use the ability name as a key, so the detection is rank agnostic
-    monitoredBars[ability.name] = btn
+  for _, ability in ipairs(abilitiesCollection) do
+    local icon = redraw and monitoredBars[ability.name] or InterruptBar_CreateIcon(ability)
+
+    if InterruptBarDB.columns > 0 and colCounter > InterruptBarDB.columns then
+      colCounter = 1
+      row = row + 1
+      x = -45
+    end
+
+    icon:SetPoint("CENTER", bar, "CENTER", x, row * -30)
+
     x = x + 30
+    colCounter = colCounter + 1
+
+    monitoredBars[ability.name] = icon
+  end
+
+  -- force the whole bar to redraw with the new positions
+  if redraw then
+    bar:Hide()
+    bar:Show()
   end
 end
 
 local function InterruptBar_SavePosition()
   local point, _, relativePoint, xOfs, yOfs = bar:GetPoint()
-  
+
   if not InterruptBarDB.Position then 
     InterruptBarDB.Position = {}
   end
@@ -173,7 +199,7 @@ local function InterruptBar_InitializeAbilities(abilitiesCollection)
 end
 
 local function InterruptBar_CreateBar()
-  InterruptBar_InitializeAbilities(abilities)
+  InterruptBar_InitializeAbilities(InterruptBarDB.abilities)
 
   bar = CreateFrame("Frame", nil, UIParent)
   bar:SetMovable(true)
@@ -184,7 +210,7 @@ local function InterruptBar_CreateBar()
   bar:SetScript("OnMouseUp", function(self, button) if button == "LeftButton" then self:StopMovingOrSizing() InterruptBar_SavePosition() end end)
   bar:Show()
   
-  InterruptBar_AddIcons(abilities)
+  InterruptBar_PositionSpellIcons(InterruptBarDB.abilities)
   InterruptBar_UpdateBar()
   InterruptBar_LoadPosition()
 end
@@ -212,12 +238,15 @@ local function InterruptBar_PLAYER_ENTERING_WORLD(self)
 end
 
 local function InterruptBar_Reset()
-  InterruptBarDB = { scale = 1, hidden = false, lock = false }
+  InterruptBarDB = defaultConfig
+
   InterruptBar_UpdateBar()
   InterruptBar_LoadPosition()
 end
 
 local function InterruptBar_Test()
+  InterruptBar_ResetAllTimers()
+  
   for _, btn in pairs(monitoredBars) do
     btn.activate()
   end
@@ -225,6 +254,7 @@ end
 
 local cmdfuncs = {
   scale = function(v) InterruptBarDB.scale = v; InterruptBar_UpdateBar() end,
+  columns = function(v) InterruptBarDB.columns = v; InterruptBar_PositionSpellIcons(InterruptBarDB.abilities, true) end,
   hidden = function() InterruptBarDB.hidden = not InterruptBarDB.hidden; InterruptBar_UpdateBar() end,
   lock = function() InterruptBarDB.lock = not InterruptBarDB.lock; InterruptBar_UpdateBar() end,
   reset = function() InterruptBar_Reset() end,
@@ -253,6 +283,7 @@ function InterruptBar_Command(cmd)
     -- not a valid command so show the help
     ChatFrame1:AddMessage("InterruptBar Options | /ib <option>", 0, 1, 0)
     ChatFrame1:AddMessage("-- scale <number> | value: " .. InterruptBarDB.scale, 0, 1, 0)
+    ChatFrame1:AddMessage("-- columns <number> | value: " .. tostring(InterruptBarDB.columns), 0, 1, 0)
     ChatFrame1:AddMessage("-- hidden (toggle) | value: " .. tostring(InterruptBarDB.hidden), 0, 1, 0)
     ChatFrame1:AddMessage("-- lock (toggle) | value: " .. tostring(InterruptBarDB.lock), 0, 1, 0)
     ChatFrame1:AddMessage("-- test (execute)", 0 , 1, 0)
@@ -260,18 +291,25 @@ function InterruptBar_Command(cmd)
   end
 end
 
-local function InterruptBar_OnLoad(self)
-  self:RegisterEvent("PLAYER_ENTERING_WORLD")
-  self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-
+local function InterruptBar_InitializeDB()
   -- initialize the saved variables
   if InterruptBarDB == nil then
-    InterruptBarDB = { scale = 1, hidden = false, lock = false }
+    InterruptBarDB = defaultConfig
   end;
 
   if not InterruptBarDB.scale then InterruptBarDB.scale = 1 end
   if not InterruptBarDB.hidden then InterruptBarDB.hidden = false end
   if not InterruptBarDB.lock then InterruptBarDB.lock = false end
+  if not InterruptBarDB.columns then InterruptBarDB.columns = 0 end
+  if not InterruptBarDB.abilities then InterruptBarDB.abilities = defaultAbilities end
+end
+
+local function InterruptBar_OnLoad(self)
+  self:RegisterEvent("PLAYER_ENTERING_WORLD")
+  self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+
+  InterruptBar_InitializeDB()
+
   InterruptBar_CreateBar()
 
   SlashCmdList["InterruptBar"] = InterruptBar_Command
@@ -294,6 +332,6 @@ local function InterruptBar_OnEvent(self, event, arg1, ...)
   eventhandler[event](self, event, arg1, ...)
 end
 
-frame = CreateFrame("Frame",nil,UIParent)
+frame = CreateFrame("Frame", nil, UIParent)
 frame:SetScript("OnEvent", InterruptBar_OnEvent)
 frame:RegisterEvent("ADDON_LOADED")
