@@ -76,6 +76,7 @@ local function InterruptBar_CreateIcon(ability)
   text:SetTextColor(1, 1, 0, 1)
   text:SetPoint("LEFT", btn, "LEFT", 2,0)
 
+  -- TODO: use GetSpellCooldown to retrieve the cooldown instead of relying on configuration
   btn.texture = texture
   btn.text = text
   btn.duration = ability.duration
@@ -185,14 +186,16 @@ local function InterruptBar_CreateBar()
 end
 
 -- combat log event has happened
-local function InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(a1, eventtype, a2, a3, srcName, srcFlags, a4, a5, dstName, dstFlags, a6)
+local function InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, _, _, srcName, srcFlags, _, _, dstName, dstFlags, _, spellid, spellName)
   -- TODO: investigate potential bug when spells get resisted/miss
   if srcFlags and band(srcFlags, 0x00000040) == 0x00000040 and eventtype == "SPELL_CAST_SUCCESS" then
+    ChatFrame1:AddMessage("DEBUG: spellId from combat log: " .. tostring(spellid), 0, 1, 0)
+    ChatFrame1:AddMessage("DEBUG: spellname from combat log: " .. tostring(spellName), 0, 1, 0)
 
     -- check if the spell id is being monitored by us and activate it
     local btn = btns[spellid]
     if btn then
-      btn.activate() 
+      btn.activate()
     end
   end
 end
@@ -281,8 +284,8 @@ local eventhandler = {
       InterruptBar_OnLoad(self)
     end;
   end,
-  ["PLAYER_ENTERING_WORLD"] = function(self) InterruptBar_PLAYER_ENTERING_WORLD(self) end,
-  ["COMBAT_LOG_EVENT_UNFILTERED"] = function(self, ...) InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(...) end,
+  ["PLAYER_ENTERING_WORLD"] = function(self, ...) InterruptBar_PLAYER_ENTERING_WORLD(self) end,
+  ["COMBAT_LOG_EVENT_UNFILTERED"] = function(self, ...) InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(CombatLogGetCurrentEventInfo()) end,
 }
 
 local function InterruptBar_OnEvent(self, event, arg1, ...)

@@ -9,3 +9,7 @@ Updating the addon's target version to the latest client.
 Command for getting the current client version:
 
 `/run print((select(4, GetBuildInfo())));`
+
+Enable/Disable LUA errors in the client:
+
+`/console scriptErrors 0/1`
