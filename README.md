@@ -1,4 +1,4 @@
-# Interrupt Bar for TBC Classic
+# Interrupt Bar addon for TBC Classic
 
 This is an updated version of the once popular InterruptBar created by Kollektiv. The goal is to have this lightweight addon working for TBC Classic.
 

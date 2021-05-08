@@ -1,28 +1,23 @@
 ----------------------------------------------------
--- Interrupt Bar by Kollektiv
+-- Interrupt Bar by Kollektiv updated by Rdmx
 ----------------------------------------------------
 
 -- Add new abilities here. Order is determined as shown.
 local abilities = {
-  {spellid = 2139,   duration = 20},   -- Counterspell
-  {spellid = 19647,  duration = 24},   -- Spell Lock
-  {spellid = 57994,  duration = 12},   -- Wind Shear
-  {spellid = 6552,   duration = 15},   -- Pummel
-  {spellid = 47528,  duration = 15},   -- Mind Freeze
-  {spellid = 1766,   duration = 15},   -- Kick
-  {spellid = 80965,  duration = 15},   -- Skull Bash
-  {spellid = 96231,  duration = 15},   -- Rebuke
-  {spellid = 116705, duration = 15},   -- Spear Hand Strike
-  {spellid = 78675,  duration = 60},   -- Solar Beam
+  { spellid = 2139, duration = 20},    -- Counterspell
+  { spellid = 19647, duration = 24},   -- Spell Lock
+  { spellid = 6552, duration = 15},    -- Pummel
+  { spellid = 1766, duration = 15},    -- Kick
+  { spellid = 36554, duration = 30},   -- Shadowstep
+  { spellid = 31224, duration = 60},   -- Cloak of Shadows
+  { spellid = 23920, duration = 10}    -- Spell Reflection
 }
 
 -----------------------------------------------------
 -----------------------------------------------------
 
-InterruptBarDB = InterruptBarDB or { scale = 1, hidden = false, lock = false, }
-
-for _,ability in ipairs(abilities) do
-  local _,_,spellicon = GetSpellInfo(ability.spellid)
+for _, ability in ipairs(abilities) do
+  local _, _, spellicon = GetSpellInfo(ability.spellid)
   ability.icon = spellicon
 end
 
@@ -49,33 +44,37 @@ local function InterruptBar_OnUpdate(self)
   local cooldown = self.start + self.duration - GetTime()
   if cooldown <= 0 then
     self.deactivate()
-  else 
+  else
     self.settimeleft(ceil(cooldown))
   end
 end
 
 local function InterruptBar_CreateIcon(ability)
-  local btn = CreateFrame("Frame",nil,bar)
+  local btn = CreateFrame("Frame", nil, bar)
   btn:SetWidth(30)
   btn:SetHeight(30)
   btn:SetFrameStrata("LOW")
 
-  local cd = CreateFrame("Cooldown",nil,btn)
+  local cd = CreateFrame("Cooldown", nil, btn)
   cd.noomnicc = true
   cd.noCooldownCount = true
   cd:SetAllPoints(true)
   cd:SetFrameStrata("MEDIUM")
+  cd:SetHideCountdownNumbers(true)
+  cd:SetDrawBling(true)
+  cd:SetDrawSwipe(true)
+  cd:SetAlpha(1)
   cd:Hide()
 
-  local texture = btn:CreateTexture(nil,"BACKGROUND")
+  local texture = btn:CreateTexture(nil, "BACKGROUND")
   texture:SetAllPoints(true)
   texture:SetTexture(ability.icon)
-  texture:SetTexCoord(0.07,0.9,0.07,0.90)
+  texture:SetTexCoord(0.07, 0.9, 0.07, 0.90)
 
-  local text = cd:CreateFontString(nil,"ARTWORK")
-  text:SetFont(STANDARD_TEXT_FONT,18,"OUTLINE")
-  text:SetTextColor(1,1,0,1)
-  text:SetPoint("LEFT",btn,"LEFT",2,0)
+  local text = cd:CreateFontString(nil, "ARTWORK")
+  text:SetFont(STANDARD_TEXT_FONT, 18, "OUTLINE")
+  text:SetTextColor(1, 1, 0, 1)
+  text:SetPoint("LEFT", btn, "LEFT", 2,0)
 
   btn.texture = texture
   btn.text = text
@@ -87,7 +86,7 @@ local function InterruptBar_CreateIcon(ability)
     if InterruptBarDB.hidden then btn:Show() end
     btn.start = GetTime()
     btn.cd:Show()
-    btn.cd:SetCooldown(GetTime()-0.40,btn.duration)
+    btn.cd:SetCooldown(GetTime() - 0.1, btn.duration)
     btn.start = GetTime()
     btn.settimeleft(btn.duration)
     btn:SetScript("OnUpdate", InterruptBar_OnUpdate)
@@ -107,20 +106,20 @@ local function InterruptBar_CreateIcon(ability)
       if timeleft <= 0.5 then
         btn.text:SetText("")
       else
-        btn.text:SetFormattedText(" %d",timeleft)
+        btn.text:SetFormattedText(" %d", timeleft)
       end
     else
-      btn.text:SetFormattedText("%d",timeleft)
+      btn.text:SetFormattedText("%d", timeleft)
     end
-    if timeleft < 6 then 
-      btn.text:SetTextColor(1,0,0,1)
-    else 
-      btn.text:SetTextColor(1,1,0,1) 
+    if timeleft < 6 then
+      btn.text:SetTextColor(1, 0, 0, 1)
+    else
+      btn.text:SetTextColor(1, 1, 0, 1)
     end
     if timeleft > 60 then
-      btn.text:SetFont(STANDARD_TEXT_FONT,14,"OUTLINE")
+      btn.text:SetFont(STANDARD_TEXT_FONT, 14, "OUTLINE")
     else
-      btn.text:SetFont(STANDARD_TEXT_FONT,18,"OUTLINE")
+      btn.text:SetFont(STANDARD_TEXT_FONT, 18, "OUTLINE")
     end
   end
 
@@ -150,7 +149,7 @@ end
 
 local function InterruptBar_LoadPosition()
   if InterruptBarDB.Position then
-    bar:SetPoint(InterruptBarDB.Position.point,UIParent,InterruptBarDB.Position.relativePoint,InterruptBarDB.Position.xOfs,InterruptBarDB.Position.yOfs)
+    bar:SetPoint(InterruptBarDB.Position.point, UIParent, InterruptBarDB.Position.relativePoint, InterruptBarDB.Position.xOfs, InterruptBarDB.Position.yOfs)
   else
     bar:SetPoint("CENTER", UIParent, "CENTER")
   end
@@ -159,9 +158,9 @@ end
 local function InterruptBar_UpdateBar()
   bar:SetScale(InterruptBarDB.scale)
   if InterruptBarDB.hidden then
-    for _,btn in pairs(btns) do btn:Hide() end
+    for _, btn in pairs(btns) do btn:Hide() end
   else
-    for _,btn in pairs(btns) do btn:Show() end
+    for _, btn in pairs(btns) do btn:Show() end
   end
   if InterruptBarDB.lock then
     bar:EnableMouse(false)
@@ -176,8 +175,8 @@ local function InterruptBar_CreateBar()
   bar:SetWidth(120)
   bar:SetHeight(30)
   bar:SetClampedToScreen(true) 
-  bar:SetScript("OnMouseDown",function(self,button) if button == "LeftButton" then self:StartMoving() end end)
-  bar:SetScript("OnMouseUp",function(self,button) if button == "LeftButton" then self:StopMovingOrSizing() InterruptBar_SavePosition() end end)
+  bar:SetScript("OnMouseDown", function(self, button) if button == "LeftButton" then self:StartMoving() end end)
+  bar:SetScript("OnMouseUp", function(self, button) if button == "LeftButton" then self:StopMovingOrSizing() InterruptBar_SavePosition() end end)
   bar:Show()
   
   InterruptBar_AddIcons()
@@ -185,14 +184,16 @@ local function InterruptBar_CreateBar()
   InterruptBar_LoadPosition()
 end
 
-local function InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, _, _, srcName, srcFlags, _, _, dstName, dstFlags, _, spellid)
-  if band(srcFlags, 0x00000040) == 0x00000040 and eventtype == "SPELL_CAST_SUCCESS" then 
-    -- Redirect Optical Blast to Spell Lock
-    if (spellid == OPTICALBLAST or spellid == OPTICALBLASTSAC) and btns[SPELLLOCK] then
-      spellid = SPELLLOCK
-    end
+-- combat log event has happened
+local function InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(a1, eventtype, a2, a3, srcName, srcFlags, a4, a5, dstName, dstFlags, a6)
+  -- TODO: investigate potential bug when spells get resisted/miss
+  if srcFlags and band(srcFlags, 0x00000040) == 0x00000040 and eventtype == "SPELL_CAST_SUCCESS" then
+
+    -- check if the spell id is being monitored by us and activate it
     local btn = btns[spellid]
-    if btn then btn.activate() end
+    if btn then
+      btn.activate() 
+    end
   end
 end
 
@@ -238,7 +239,7 @@ function InterruptBar_Command(cmd)
   for v in gmatch(cmd, "[^ ]+") do
     tinsert(cmdtbl, v)
   end
-  
+
   -- try to get the first command
   local commandCallback = cmdfuncs[cmdtbl[1]] 
   if commandCallback then
@@ -246,39 +247,48 @@ function InterruptBar_Command(cmd)
     commandCallback(commandParam)
   else
     -- not a valid command so show the help
-    ChatFrame1:AddMessage("InterruptBar Options | /ib <option>",0,1,0)  	
-    ChatFrame1:AddMessage("-- scale <number> | value: " .. InterruptBarDB.scale,0,1,0)
-    ChatFrame1:AddMessage("-- hidden (toggle) | value: " .. tostring(InterruptBarDB.hidden),0,1,0)
-    ChatFrame1:AddMessage("-- lock (toggle) | value: " .. tostring(InterruptBarDB.lock),0,1,0)
-    ChatFrame1:AddMessage("-- test (execute)",0,1,0)
-    ChatFrame1:AddMessage("-- reset (execute)",0,1,0)
+    ChatFrame1:AddMessage("InterruptBar Options | /ib <option>", 0, 1, 0)
+    ChatFrame1:AddMessage("-- scale <number> | value: " .. InterruptBarDB.scale, 0, 1, 0)
+    ChatFrame1:AddMessage("-- hidden (toggle) | value: " .. tostring(InterruptBarDB.hidden), 0, 1, 0)
+    ChatFrame1:AddMessage("-- lock (toggle) | value: " .. tostring(InterruptBarDB.lock), 0, 1, 0)
+    ChatFrame1:AddMessage("-- test (execute)", 0 , 1, 0)
+    ChatFrame1:AddMessage("-- reset (execute)", 0, 1, 0)
   end
 end
 
 local function InterruptBar_OnLoad(self)
   self:RegisterEvent("PLAYER_ENTERING_WORLD")
   self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+  -- initialize the saved variables
+  if InterruptBarDB == nil then
+    InterruptBarDB = { scale = 1, hidden = false, lock = false }
+  end;
+
   if not InterruptBarDB.scale then InterruptBarDB.scale = 1 end
   if not InterruptBarDB.hidden then InterruptBarDB.hidden = false end
   if not InterruptBarDB.lock then InterruptBarDB.lock = false end
   InterruptBar_CreateBar()
-  
+
   SlashCmdList["InterruptBar"] = InterruptBar_Command
   SLASH_InterruptBar1 = "/ib"
-  
-  ChatFrame1:AddMessage("Interrupt Bar by Kollektiv(updated by Rdmx). Type /ib for options.",0,1,0)
+
+  ChatFrame1:AddMessage("Interrupt Bar by Kollektiv(updated by Rdmx). Type /ib for options.", 0, 1, 0)
 end
 
 local eventhandler = {
-  ["VARIABLES_LOADED"] = function(self) InterruptBar_OnLoad(self) end,
+  ["ADDON_LOADED"] = function(self, event, arg1, ...)
+    if event == "ADDON_LOADED" and arg1 == "InterruptBar" then
+      InterruptBar_OnLoad(self)
+    end;
+  end,
   ["PLAYER_ENTERING_WORLD"] = function(self) InterruptBar_PLAYER_ENTERING_WORLD(self) end,
-  ["COMBAT_LOG_EVENT_UNFILTERED"] = function(self,...) InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(...) end,
+  ["COMBAT_LOG_EVENT_UNFILTERED"] = function(self, ...) InterruptBar_COMBAT_LOG_EVENT_UNFILTERED(...) end,
 }
 
-local function InterruptBar_OnEvent(self,event,...)
-  eventhandler[event](self,...)
+local function InterruptBar_OnEvent(self, event, arg1, ...)
+  eventhandler[event](self, event, arg1, ...)
 end
 
 frame = CreateFrame("Frame",nil,UIParent)
-frame:SetScript("OnEvent",InterruptBar_OnEvent)
-frame:RegisterEvent("VARIABLES_LOADED")
+frame:SetScript("OnEvent", InterruptBar_OnEvent)
+frame:RegisterEvent("ADDON_LOADED")
