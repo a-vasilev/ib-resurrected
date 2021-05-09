@@ -3,3 +3,5 @@ package-as: InterruptBar
 ignore:
     - doc
     - README.md
+
+manual-changelog: CHANGELOG.txt

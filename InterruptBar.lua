@@ -16,6 +16,8 @@ local defaultAbilities = {
     { spellid = 36554, duration = 30},   -- Shadowstep
     { spellid = 8177, duration = 15},    -- Grounding Totem
     { spellid = 10890, duration = 30},   -- Psychic Scream
+    { spellid = 30414, duration = 20},   -- Shadowfury
+    { spellid = 27223, duration = 120},  -- Death Coil
     { spellid = 32996, duration = 12},   -- Shadow Word: Death
     { spellid = 31224, duration = 60},   -- Cloak of Shadows
     { spellid = 23920, duration = 10},   -- Spell Reflection
