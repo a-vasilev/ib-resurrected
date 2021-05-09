@@ -1,25 +1,32 @@
-----------------------------------------------------
--- Interrupt Bar by Kollektiv updated by Rdmx
-----------------------------------------------------
+--[[
+  Interrupt Bar Resurrected by Rdmx, inspired by the original from Kollektiv
+--]]
 
 -- Add new abilities here. Order is determined as shown.
 local defaultAbilities = {
-  { spellid = 2139, duration = 24},    -- Counterspell
-  { spellid = 19647, duration = 24},   -- Spell Lock
-  { spellid = 25454, duration = 6},    -- Earth Shock
-  { spellid = 6552, duration = 15},    -- Pummel
-  { spellid = 1766, duration = 15},    -- Kick
-  { spellid = 15487, duration = 45},   -- Silence
-  { spellid = 36554, duration = 30},   -- Shadowstep
-  { spellid = 8177, duration = 15},    -- Grounding Totem
-  { spellid = 10890, duration = 30},   -- Psychic Scream
-  { spellid = 32996, duration = 12},   -- Shadow Word: Death
-  { spellid = 31224, duration = 60},   -- Cloak of Shadows
-  { spellid = 23920, duration = 10},   -- Spell Reflection
+  caster = {
+    { spellid = 2139, duration = 24},    -- Counterspell
+    { spellid = 19647, duration = 24},   -- Spell Lock
+    { spellid = 25454, duration = 6},    -- Earth Shock
+    { spellid = 6552, duration = 10},    -- Pummel
+    { spellid = 1766, duration = 10},    -- Kick
+    { spellid = 15487, duration = 45},   -- Silence
+    { spellid = 34490, duration = 20},   -- Silencing Shot
+    { spellid = 19503, duration = 30},   -- Scatter Shot
+    { spellid = 36554, duration = 30},   -- Shadowstep
+    { spellid = 8177, duration = 15},    -- Grounding Totem
+    { spellid = 10890, duration = 30},   -- Psychic Scream
+    { spellid = 32996, duration = 12},   -- Shadow Word: Death
+    { spellid = 31224, duration = 60},   -- Cloak of Shadows
+    { spellid = 23920, duration = 10},   -- Spell Reflection
+  },
+  melee = {
+    { spellid = 36554, duration = 30},   -- Shadowstep
+    { spellid = 10890, duration = 30},   -- Psychic Scream
+    { spellid = 32996, duration = 12},   -- Shadow Word: Death
+    { spellid = 31224, duration = 60},   -- Cloak of Shadows
+  }
 }
-
------------------------------------------------------
------------------------------------------------------
 
 local frame
 local bar
@@ -31,6 +38,7 @@ local defaultConfig = {
   lock = false,
   columns = 0,
   alpha = 1,
+  preset = "caster",
   abilities = defaultAbilities
 }
 
@@ -53,6 +61,10 @@ local function InterruptBar_ShowHelp()
   ChatFrame1:AddMessage("-- lock (toggle) | value: " .. tostring(InterruptBarDB.lock), 0, 1, 0)
   ChatFrame1:AddMessage("-- test (execute)", 0 , 1, 0)
   ChatFrame1:AddMessage("-- reset (execute)", 0, 1, 0)
+end
+
+local function InterruptBar_GetAbilities()
+  return InterruptBarDB.abilities[InterruptBarDB.preset]
 end
 
 -- main frame update function, this is what updates the current cooldown of each icon
@@ -93,6 +105,7 @@ local function InterruptBar_CreateIcon(ability)
   btn.text = text
   btn.duration = ability.duration
   btn.cd = cd
+  btn.spellid = ability.spellid
 
   -- called when a spell has been cast to start the cooldown tracker
   btn.activate = function()
@@ -175,9 +188,11 @@ local function InterruptBar_PositionSpellIcons(abilitiesCollection)
 end
 
 local function InterruptBar_AddSpell(spellid, duration)
-  for _, ability in ipairs(InterruptBarDB.abilities) do
+  for _, ability in ipairs(InterruptBar_GetAbilities()) do
     -- the spell already exists, just update it
-    if ability.spellid == spellid then return end
+    if ability.spellid == spellid then
+      return
+    end
   end
 
   -- create a new ability if it doesnt exist already
@@ -191,9 +206,8 @@ local function InterruptBar_AddSpell(spellid, duration)
   newAbility.icon = spellicon
   newAbility.name = name
 
-  table.insert(InterruptBarDB.abilities, newAbility)
-
-  InterruptBar_PositionSpellIcons(InterruptBarDB.abilities)
+  table.insert(InterruptBar_GetAbilities(), newAbility)
+  InterruptBar_PositionSpellIcons(InterruptBar_GetAbilities())
 end
 
 local function InterruptBar_SavePosition()
@@ -245,7 +259,7 @@ local function InterruptBar_InitializeAbilities(abilitiesCollection)
 end
 
 local function InterruptBar_CreateBar()
-  InterruptBar_InitializeAbilities(InterruptBarDB.abilities)
+  InterruptBar_InitializeAbilities(InterruptBar_GetAbilities())
 
   bar = CreateFrame("Frame", nil, UIParent)
   bar:SetMovable(true)
@@ -256,7 +270,7 @@ local function InterruptBar_CreateBar()
   bar:SetScript("OnMouseUp", function(self, button) if button == "LeftButton" then self:StopMovingOrSizing() InterruptBar_SavePosition() end end)
   bar:Show()
   
-  InterruptBar_PositionSpellIcons(InterruptBarDB.abilities)
+  InterruptBar_PositionSpellIcons(InterruptBar_GetAbilities())
   InterruptBar_UpdateBar()
   InterruptBar_LoadPosition()
 end
@@ -288,8 +302,12 @@ local function InterruptBar_Reset()
 
   InterruptBarDB = defaultConfig
 
+  InterruptBar_InitializeAbilities(InterruptBar_GetAbilities())
+
   InterruptBar_UpdateBar()
   InterruptBar_LoadPosition()
+
+  ChatFrame1:AddMessage("Interrupt Bar Configuration reset, /reload the UI", 0, 1, 0)
 end
 
 local function InterruptBar_Test()
@@ -312,7 +330,7 @@ local cmdfuncs = {
   columns = function(v)
     if (type(v) == "number") and (floor(v) == v) then
       InterruptBarDB.columns = v;
-      InterruptBar_PositionSpellIcons(InterruptBarDB.abilities)
+      InterruptBar_PositionSpellIcons(InterruptBar_GetAbilities())
     else
       InterruptBar_ShowHelp()
     end
@@ -327,6 +345,7 @@ local cmdfuncs = {
   end,
   add = function(spellid, duration)
     InterruptBar_AddSpell(spellid, duration)
+    InterruptBar_UpdateBar()
   end,
   hidden = function() InterruptBarDB.hidden = not InterruptBarDB.hidden; InterruptBar_UpdateBar() end,
   lock = function() InterruptBarDB.lock = not InterruptBarDB.lock; InterruptBar_UpdateBar() end,
@@ -370,6 +389,7 @@ local function InterruptBar_InitializeDB()
   if not InterruptBarDB.columns then InterruptBarDB.columns = 0 end
   if not InterruptBarDB.alpha then InterruptBarDB.alpha = 1 end
   if not InterruptBarDB.abilities then InterruptBarDB.abilities = defaultAbilities end
+  if not InterruptBarDB.preset then InterruptBarDB.preset = "caster" end
 end
 
 local function InterruptBar_OnLoad(self)
@@ -383,7 +403,7 @@ local function InterruptBar_OnLoad(self)
   SlashCmdList["InterruptBar"] = InterruptBar_Command
   SLASH_InterruptBar1 = "/ib"
 
-  ChatFrame1:AddMessage("Interrupt Bar by Kollektiv(updated by Rdmx). Type /ib for options.", 0, 1, 0)
+  ChatFrame1:AddMessage("Interrupt Bar Resurrected by Rdmx, inspired by the original from Kollektiv. Type /ib for options.", 0, 1, 0)
 end
 
 local eventhandler = {

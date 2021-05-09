@@ -1,6 +1,6 @@
 # Interrupt Bar addon for TBC Classic
 
-This is an updated version of the once popular InterruptBar created by Kollektiv. The goal is to have this lightweight addon working for TBC Classic.
+Lightweight cooldown tracking addon for TBC Classic. Build ontop of the once popular InterruptBar by Kollektiv.
 
 ## Maintenance
 
@@ -23,6 +23,7 @@ I've added a few features that were missing in the original version:
 - Configuration for transparency of the whole bar - `/ib alpha <number>`
 - More robust input validation, there was none
 - Added a lot of spells by default
+- Command for adding abilities through the game, no need to edit the lua anymore (but you still can)
 
 ## TODO Features
 

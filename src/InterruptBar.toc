@@ -2,7 +2,7 @@
 ## Title: Interrupt Bar Resurrected
 ## Notes: Tracks interrupts
 ## Version: 0.01
-## Author: Kollektiv (updated by Rdmx)
+## Author: Rdmx
 ## DefaultState: Enabled
 ## SavedVariables: InterruptBarDB
 
