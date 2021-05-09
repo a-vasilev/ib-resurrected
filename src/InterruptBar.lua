@@ -144,12 +144,6 @@ local function InterruptBar_PositionSpellIcons(abilitiesCollection, redraw)
 
     monitoredBars[ability.name] = icon
   end
-
-  -- force the whole bar to redraw with the new positions
-  if redraw then
-    bar:Hide()
-    bar:Show()
-  end
 end
 
 local function InterruptBar_SavePosition()
