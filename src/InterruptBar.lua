@@ -4,11 +4,16 @@
 
 -- Add new abilities here. Order is determined as shown.
 local defaultAbilities = {
-  { spellid = 2139, duration = 20},    -- Counterspell
+  { spellid = 2139, duration = 24},    -- Counterspell
   { spellid = 19647, duration = 24},   -- Spell Lock
+  { spellid = 25454, duration = 6},    -- Earth Shock
   { spellid = 6552, duration = 15},    -- Pummel
   { spellid = 1766, duration = 15},    -- Kick
+  { spellid = 15487, duration = 45},   -- Silence
   { spellid = 36554, duration = 30},   -- Shadowstep
+  { spellid = 8177, duration = 15},    -- Grounding Totem
+  { spellid = 10890, duration = 30},   -- Psychic Scream
+  { spellid = 32996, duration = 12},   -- Shadow Word: Death
   { spellid = 31224, duration = 60},   -- Cloak of Shadows
   { spellid = 23920, duration = 10},   -- Spell Reflection
 }
@@ -25,6 +30,7 @@ local defaultConfig = {
   hidden = false,
   lock = false,
   columns = 0,
+  alpha = 1,
   abilities = defaultAbilities
 }
 
@@ -32,11 +38,25 @@ local band = bit.band
 local GetTime = GetTime
 local ipairs = ipairs
 local pairs = pairs
+local floor = math.floor
 local ceil = math.ceil
 local band = bit.band
 local GetSpellInfo = GetSpellInfo
 
-local function InterruptBar_OnUpdate(self)
+local function InterruptBar_ShowHelp()
+  ChatFrame1:AddMessage("InterruptBar Options | /ib <option>", 0, 1, 0)
+  ChatFrame1:AddMessage("-- scale <number> | value: " .. InterruptBarDB.scale, 0, 1, 0)
+  ChatFrame1:AddMessage("-- columns <number> | value: " .. tostring(InterruptBarDB.columns), 0, 1, 0)
+  ChatFrame1:AddMessage("-- alpha <number> | value: " .. tostring(InterruptBarDB.alpha), 0, 1, 0)
+  ChatFrame1:AddMessage("-- add <spellid> <duration>", 0, 1, 0)
+  ChatFrame1:AddMessage("-- hidden (toggle) | value: " .. tostring(InterruptBarDB.hidden), 0, 1, 0)
+  ChatFrame1:AddMessage("-- lock (toggle) | value: " .. tostring(InterruptBarDB.lock), 0, 1, 0)
+  ChatFrame1:AddMessage("-- test (execute)", 0 , 1, 0)
+  ChatFrame1:AddMessage("-- reset (execute)", 0, 1, 0)
+end
+
+-- main frame update function, this is what updates the current cooldown of each icon
+local function InterruptBar_OnUpdateIcon(self)
   local cooldown = self.start + self.duration - GetTime()
   if cooldown <= 0 then
     self.deactivate()
@@ -84,7 +104,7 @@ local function InterruptBar_CreateIcon(ability)
     btn.cd:SetCooldown(GetTime() - 0.1, btn.duration)
     btn.start = GetTime()
     btn.settimeleft(btn.duration)
-    btn:SetScript("OnUpdate", InterruptBar_OnUpdate)
+    btn:SetScript("OnUpdate", InterruptBar_OnUpdateIcon)
     btn.active = true
   end
 
@@ -108,11 +128,15 @@ local function InterruptBar_CreateIcon(ability)
     else
       btn.text:SetFormattedText("%d", timeleft)
     end
+
+    -- red color when the spell is almost ready, yellow otherwise
     if timeleft < 6 then
       btn.text:SetTextColor(1, 0, 0, 1)
     else
       btn.text:SetTextColor(1, 1, 0, 1)
     end
+
+    -- set smaller font if the time left is too big, so it can fit in the icon
     if timeleft > 60 then
       btn.text:SetFont(STANDARD_TEXT_FONT, 14, "OUTLINE")
     else
@@ -123,13 +147,17 @@ local function InterruptBar_CreateIcon(ability)
   return btn
 end
 
-local function InterruptBar_PositionSpellIcons(abilitiesCollection, redraw)
+local function InterruptBar_PositionSpellIcons(abilitiesCollection)
   local x = -45
   local row = 0
   local colCounter = 1
 
+  -- position every icon, take account of the number of icons per row
   for _, ability in ipairs(abilitiesCollection) do
-    local icon = redraw and monitoredBars[ability.name] or InterruptBar_CreateIcon(ability)
+    local icon = monitoredBars[ability.name]
+    if not icon then
+      icon = InterruptBar_CreateIcon(ability)
+    end
 
     if InterruptBarDB.columns > 0 and colCounter > InterruptBarDB.columns then
       colCounter = 1
@@ -144,6 +172,28 @@ local function InterruptBar_PositionSpellIcons(abilitiesCollection, redraw)
 
     monitoredBars[ability.name] = icon
   end
+end
+
+local function InterruptBar_AddSpell(spellid, duration)
+  for _, ability in ipairs(InterruptBarDB.abilities) do
+    -- the spell already exists, just update it
+    if ability.spellid == spellid then return end
+  end
+
+  -- create a new ability if it doesnt exist already
+  local newAbility = {}
+  local name, _, spellicon = GetSpellInfo(spellid)
+
+  if not spellicon then return end
+
+  newAbility.spellid = spellid
+  newAbility.duration = duration
+  newAbility.icon = spellicon
+  newAbility.name = name
+
+  table.insert(InterruptBarDB.abilities, newAbility)
+
+  InterruptBar_PositionSpellIcons(InterruptBarDB.abilities)
 end
 
 local function InterruptBar_SavePosition()
@@ -169,6 +219,8 @@ end
 
 local function InterruptBar_UpdateBar()
   bar:SetScale(InterruptBarDB.scale)
+  bar:SetAlpha(InterruptBarDB.alpha)
+
   if InterruptBarDB.hidden then
     for _, btn in pairs(monitoredBars) do btn:Hide() end
   else
@@ -232,6 +284,8 @@ local function InterruptBar_PLAYER_ENTERING_WORLD(self)
 end
 
 local function InterruptBar_Reset()
+  InterruptBar_ResetAllTimers()
+
   InterruptBarDB = defaultConfig
 
   InterruptBar_UpdateBar()
@@ -247,8 +301,33 @@ local function InterruptBar_Test()
 end
 
 local cmdfuncs = {
-  scale = function(v) InterruptBarDB.scale = v; InterruptBar_UpdateBar() end,
-  columns = function(v) InterruptBarDB.columns = v; InterruptBar_PositionSpellIcons(InterruptBarDB.abilities, true) end,
+  scale = function(v)
+    if (type(v) == "number") then
+      InterruptBarDB.scale = v;
+      InterruptBar_UpdateBar()
+    else
+      InterruptBar_ShowHelp()
+    end
+  end,
+  columns = function(v)
+    if (type(v) == "number") and (floor(v) == v) then
+      InterruptBarDB.columns = v;
+      InterruptBar_PositionSpellIcons(InterruptBarDB.abilities)
+    else
+      InterruptBar_ShowHelp()
+    end
+  end,
+  alpha = function(v)
+    if (type(v) == "number") and v <= 1 and v >= 0 then
+      InterruptBarDB.alpha = v
+      InterruptBar_UpdateBar()
+    else
+      InterruptBar_ShowHelp()
+    end
+  end,
+  add = function(spellid, duration)
+    InterruptBar_AddSpell(spellid, duration)
+  end,
   hidden = function() InterruptBarDB.hidden = not InterruptBarDB.hidden; InterruptBar_UpdateBar() end,
   lock = function() InterruptBarDB.lock = not InterruptBarDB.lock; InterruptBar_UpdateBar() end,
   reset = function() InterruptBar_Reset() end,
@@ -271,17 +350,10 @@ function InterruptBar_Command(cmd)
   -- try to get the first command
   local commandCallback = cmdfuncs[cmdtbl[1]] 
   if commandCallback then
-    local commandParam = tonumber(cmdtbl[2])
-    commandCallback(commandParam)
+    commandCallback(tonumber(cmdtbl[2]), tonumber(cmdtbl[3]))
   else
     -- not a valid command so show the help
-    ChatFrame1:AddMessage("InterruptBar Options | /ib <option>", 0, 1, 0)
-    ChatFrame1:AddMessage("-- scale <number> | value: " .. InterruptBarDB.scale, 0, 1, 0)
-    ChatFrame1:AddMessage("-- columns <number> | value: " .. tostring(InterruptBarDB.columns), 0, 1, 0)
-    ChatFrame1:AddMessage("-- hidden (toggle) | value: " .. tostring(InterruptBarDB.hidden), 0, 1, 0)
-    ChatFrame1:AddMessage("-- lock (toggle) | value: " .. tostring(InterruptBarDB.lock), 0, 1, 0)
-    ChatFrame1:AddMessage("-- test (execute)", 0 , 1, 0)
-    ChatFrame1:AddMessage("-- reset (execute)", 0, 1, 0)
+    InterruptBar_ShowHelp()
   end
 end
 
@@ -291,10 +363,12 @@ local function InterruptBar_InitializeDB()
     InterruptBarDB = defaultConfig
   end;
 
+  -- initialize any missing parameters
   if not InterruptBarDB.scale then InterruptBarDB.scale = 1 end
   if not InterruptBarDB.hidden then InterruptBarDB.hidden = false end
   if not InterruptBarDB.lock then InterruptBarDB.lock = false end
   if not InterruptBarDB.columns then InterruptBarDB.columns = 0 end
+  if not InterruptBarDB.alpha then InterruptBarDB.alpha = 1 end
   if not InterruptBarDB.abilities then InterruptBarDB.abilities = defaultAbilities end
 end
 
