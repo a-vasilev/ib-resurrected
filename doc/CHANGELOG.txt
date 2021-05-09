@@ -1,0 +1,3 @@
+v0.4-beta
+
+- Adding Shadowfury and Death Coil to default spells

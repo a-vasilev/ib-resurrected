@@ -4,4 +4,4 @@ ignore:
     - doc
     - README.md
 
-manual-changelog: CHANGELOG.txt
+manual-changelog: doc/CHANGELOG.txt
