@@ -1,8 +1,5 @@
 package-as: InterruptBar
 
-move-folders:
-    src: ./
-
 ignore:
     - doc
     - README.md
