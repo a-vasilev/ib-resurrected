@@ -1,7 +1,7 @@
 ## Interface: 20501
 ## Title: Interrupt Bar Resurrected
 ## Notes: Tracks interrupts
-## Version: 0.2-beta
+## Version: 0.4-beta
 ## Author: Rdmx
 ## DefaultState: Enabled
 ## SavedVariables: InterruptBarDB
