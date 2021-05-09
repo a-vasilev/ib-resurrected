@@ -12,6 +12,7 @@ local defaultAbilities = {
     { spellid = 1766, duration = 10},    -- Kick
     { spellid = 15487, duration = 45},   -- Silence
     { spellid = 34490, duration = 20},   -- Silencing Shot
+    { spellid = 16979, duration = 15},   -- Feral Charge
     { spellid = 19503, duration = 30},   -- Scatter Shot
     { spellid = 36554, duration = 30},   -- Shadowstep
     { spellid = 8177, duration = 15},    -- Grounding Totem
