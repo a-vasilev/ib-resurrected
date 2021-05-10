@@ -15,6 +15,8 @@ local defaultAbilities = {
     { spellid = 16979, duration = 15},   -- Feral Charge
     { spellid = 19503, duration = 30},   -- Scatter Shot
     { spellid = 36554, duration = 30},   -- Shadowstep
+    { spellid = 10308, duration = 60},   -- Hammer of Justice
+    { spellid = 20066, duration = 60},   -- Repentance
     { spellid = 8177, duration = 15},    -- Grounding Totem
     { spellid = 10890, duration = 30},   -- Psychic Scream
     { spellid = 30414, duration = 20},   -- Shadowfury
