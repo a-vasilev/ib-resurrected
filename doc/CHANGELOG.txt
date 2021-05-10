@@ -1,3 +1,11 @@
 v0.4-beta
 
 - Adding Shadowfury and Death Coil to default spells
+
+v1.0
+
+- Adding Feral Charge
+
+v1.1
+
+- Adding Hammer of Justice and Repentence
