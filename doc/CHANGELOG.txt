@@ -1,11 +1,15 @@
-v0.4-beta
+v1.2
 
-- Adding Shadowfury and Death Coil to default spells
+- Fixing bug where the cooldown swipe was not showing
+
+v1.1
+
+- Adding Hammer of Justice and Repentence
 
 v1.0
 
 - Adding Feral Charge
 
-v1.1
+v0.4-beta
 
-- Adding Hammer of Justice and Repentence
+- Adding Shadowfury and Death Coil to default spells

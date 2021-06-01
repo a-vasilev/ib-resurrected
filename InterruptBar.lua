@@ -88,11 +88,12 @@ local function InterruptBar_CreateIcon(ability)
   btn:SetHeight(30)
   btn:SetFrameStrata("LOW")
 
-  local cd = CreateFrame("Cooldown", nil, btn)
+  local cd = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
   cd.noomnicc = true
   cd.noCooldownCount = true
   cd:SetAllPoints(true)
   cd:SetFrameStrata("MEDIUM")
+  cd:SetDrawEdge(false)
   cd:SetHideCountdownNumbers(true)
   cd:Hide()
 
