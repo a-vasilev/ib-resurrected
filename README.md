@@ -2,6 +2,8 @@
 
 Lightweight cooldown tracking addon for TBC Classic. Build ontop of the once popular InterruptBar by Kollektiv.
 
+[Curseforge Project](https://www.curseforge.com/wow/addons/interruptbar-resurrected-tbc)
+
 ## Maintenance
 
 Updating the addon's target version to the latest client.
