@@ -18,6 +18,8 @@ Enable/Disable LUA errors in the client for debugging:
 
 `/run SetCVar("nameplateMaxDistance", "41")`
 
+`/run SetCVar("ShowClassColorInNameplate", "1")`
+
 ## New Features
 
 I've added a few features that were missing in the original version:

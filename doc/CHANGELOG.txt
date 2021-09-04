@@ -1,3 +1,7 @@
+v1.3
+
+- Updating to latest patch
+
 v1.2
 
 - Fixing bug where the cooldown swipe was not showing
