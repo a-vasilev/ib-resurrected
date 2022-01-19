@@ -1,6 +1,10 @@
+v1.4
+
+- Updating to the latest patch
+
 v1.3
 
-- Updating to latest patch
+- Updating to the latest patch
 
 v1.2
 
