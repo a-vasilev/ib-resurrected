@@ -20,6 +20,8 @@ Enable/Disable LUA errors in the client for debugging:
 
 `/run SetCVar("ShowClassColorInNameplate", "1")`
 
+`/run SetCVar("SpellQueueWindow", 270)`
+
 ## New Features
 
 I've added a few features that were missing in the original version:

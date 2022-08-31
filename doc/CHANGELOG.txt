@@ -1,3 +1,7 @@
+v1.9
+
+- Updating for Wotlk Classic
+
 v1.8
 
 - Updating to the latest patch
